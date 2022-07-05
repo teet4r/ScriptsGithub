@@ -80,7 +80,7 @@ public class DBScript : MonoBehaviour
         else if (task.IsFaulted)
             Debug.Log("Error.");
         else if (!dataSnapshot.Exists)
-            Debug.Log("나가.");
+            Debug.Log("나가있어.");
         else
         {
             int i = 0;
