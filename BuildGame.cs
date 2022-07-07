@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-//using GoogleMobileAds.Api;
+using GoogleMobileAds.Api;
 
 // ***********************
 // attached in Main Camera
@@ -685,21 +685,27 @@ public class BuildGame : MonoBehaviour
 
     public void OnClickLoadScene(string name)
     {
-        SceneManager.LoadScene(name);
-        /*
         next_scene_name = name;
-        if (is_scenechange_ad_ready) // ±§∞Ì ¡ÿ∫Òµ«∏È ∫∏ø©¡‹
+
+        if (is_scenechange_ad_ready) 
         {
+            is_scenechange_ad_ready = false;
+
             RequestInterstitial();
 
-            if (this.interstitial.IsLoaded())
+            //When you want call Interstitial show
+            StartCoroutine(showInterstitial());
+
+            IEnumerator showInterstitial()  // ±§∞Ì ¡ÿ∫Òµ«∏È ∫∏ø©¡‹
+            {
+                while (!this.interstitial.IsLoaded())
+                    yield return new WaitForSeconds(0.2f);
                 this.interstitial.Show();
+            }
         }
         else
             StartCoroutine(OnClickLoadScene_(name));
-        */
     }
-    /*
     IEnumerator OnClickLoadScene_(string name)
     {
         yield return StartCoroutine(CloseDoors());
@@ -730,9 +736,8 @@ public class BuildGame : MonoBehaviour
     }
     public void HandleOnAdClosed(object sender, System.EventArgs args)
     {
-        is_scenechange_ad_ready = false;
         StartCoroutine(OnClickLoadScene_(next_scene_name));
-    }*/
+    }
     public void StartDebuffLoanShark()
     {
         PlusGold(3000);

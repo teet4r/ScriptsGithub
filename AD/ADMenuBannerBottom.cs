@@ -1,9 +1,8 @@
 using System;
 using UnityEngine;
-//using GoogleMobileAds.Api;
+using GoogleMobileAds.Api;
 public class ADMenuBannerBottom : MonoBehaviour
 {
-    /*
     private BannerView bannerView;
     public void Start()
     {
@@ -32,5 +31,4 @@ public class ADMenuBannerBottom : MonoBehaviour
         // Load the banner with the request.
         this.bannerView.LoadAd(request);
     }
-    */
 }
