@@ -28,18 +28,18 @@ public class MenuManager : MonoBehaviour
     void Awake()
     {
         start_btn.gameObject.SetActive(false);
-
-        // 로그인
-        GPGSBinder.Inst.Login((success, localUser) =>
-            log = $"{success}, {localUser.userName}, {localUser.id}, {localUser.state}, {localUser.underage}");
-        Debug.Log(log);
     }
     void Start()
     {
+        // 로그인
+        GPGSBinder.Inst.Login((success, localUser) =>
+               //log = $"{success}, {localUser.userName}, {localUser.id}, {localUser.state}, {localUser.underage}");
+               // DB 활성화
+               DBScript.Instance.Init(localUser.id));
+
         StartCoroutine(OpenDoors());
 
         Gamemanager.Instance.Set();
-
         SoundManager.Instance.PlayBgm("Menu3");
 
         blink = StartCoroutine(Blink());
