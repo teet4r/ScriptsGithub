@@ -9,7 +9,7 @@ public class ADMenuBannerBottom : MonoBehaviour
         // Initialize the Google Mobile Ads SDK.
         MobileAds.Initialize(initStatus => { });
 
-        this.RequestBanner();
+        RequestBanner();
     }
 
     private void RequestBanner()

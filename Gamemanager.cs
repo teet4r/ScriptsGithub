@@ -13,7 +13,6 @@ public class Gamemanager
     public BuffManager buffmanager { get; private set; }
     public UIManager uimanager { get; private set; }
     public BuildingManager buildingmanager { get; private set; }
-    public Archievement archievement { get; private set; }
     public static Gamemanager Instance
     {
         get
@@ -35,6 +34,5 @@ public class Gamemanager
         buffmanager = Camera.main.GetComponent<BuffManager>();
         uimanager = Camera.main.GetComponent<UIManager>();
         buildingmanager = Camera.main.GetComponent<BuildingManager>();
-        archievement = Camera.main.GetComponent<Archievement>();
     }
 }

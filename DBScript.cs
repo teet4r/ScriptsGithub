@@ -11,11 +11,11 @@ public class DBScript : MonoBehaviour
 
     class User
     {
-        public string game_connection_cnt;
+        public Achievement achievement;
 
-        public User(string[] args)
+        public User()
         {
-            game_connection_cnt = args[0];
+            achievement = new Achievement();
         }
     }
 
@@ -34,6 +34,8 @@ public class DBScript : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+        Init("g13044343168255153369");
     }
 
     public void Init(string user_id)
@@ -67,10 +69,12 @@ public class DBScript : MonoBehaviour
 
     void Create()
     {
-        user = new User(new string[] { "1" });
-        Debug.Log(user.game_connection_cnt);
-        string json = JsonUtility.ToJson(user);
-        reference.Child(user_id).SetRawJsonValueAsync(json);
+        user = new User();
+
+        //string json = JsonUtility.ToJson(user.achievement.data_int);
+        reference.Child(user_id).Child("achievement").Child("int").SetValueAsync(user.achievement.data_int);
+        //json = JsonUtility.ToJson(user.achievement.data_bool);
+        reference.Child(user_id).Child("achievement").Child("bool").SetValueAsync(user.achievement.data_bool);
     }
 
     void Read()
@@ -85,29 +89,46 @@ public class DBScript : MonoBehaviour
             Create();
         else if (dataSnapshot.Exists)
         {
-            int i = 0;
-            string[] args = new string[dataSnapshot.ChildrenCount];
-            foreach (var data in dataSnapshot.Children)
-                args[i++] = data.Value.ToString();
-            user = new User(args);
+            user = new User();
+
+            var achievement_data = dataSnapshot.Child("achievement").Child("int");
+            foreach (var d in achievement_data.Children)
+                user.achievement.UpdateUser(d.Key, (int)d.Value); // 언박싱하는 과정에서 터짐
+            achievement_data = dataSnapshot.Child("achievement").Child("bool");
+            foreach (var d in achievement_data.Children)
+                user.achievement.UpdateUser(d.Key, (bool)d.Value);
 
             // 읽기에 성공했으므로 game_connection_cnt++;
-            user.game_connection_cnt = (int.Parse(user.game_connection_cnt) + 1).ToString();
-            Update_("game_connection_cnt", user.game_connection_cnt);
+            const string key = Achievement.Key.TypeInt.game_connected_count;
+            user.achievement.UpdateUser(key, 1);
+            UpdateAchievement<int>(key);
         }
     }
 
-    public void Update_(string key, string new_value)
+    public void UpdateAchievement<T>(string key)
     {
         if (!init_done || user == null)
             return;
-        reference.Child(user_id).UpdateChildrenAsync(ToDictionary(key, new_value));
+        if (typeof(T) == typeof(int) && user.achievement.data_int.ContainsKey(key))
+        {
+            reference.Child(user_id).Child("achievement").Child("int").UpdateChildrenAsync(ToDictionary(key, user.achievement.data_int[key]));
+            return;
+        }
+        else if (typeof(T) == typeof(bool) && user.achievement.data_bool.ContainsKey(key))
+        {
+            reference.Child(user_id).Child("achievement").Child("bool").UpdateChildrenAsync(ToDictionary(key, user.achievement.data_bool[key]));
+            return;
+        }
     }
 
     public void Remove()
     {
         if (!init_done || user == null)
             return;
+        reference.Child(user_id).RemoveValueAsync();
+    }
+    public void Remove(string user_id)
+    {
         reference.Child(user_id).RemoveValueAsync();
     }
 
