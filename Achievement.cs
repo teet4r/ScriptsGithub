@@ -2,46 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Achievement : MonoBehaviour
+using Firebase;
+using Firebase.Database;
+
+public class Achievement : DBScript
 {
-    public Dictionary<string, int> data_int { get; private set; }
-    public Dictionary<string, bool> data_bool { get; private set; }
-
-    public Achievement()
-    {
-        data_int = new Dictionary<string, int>()
-        {
-            { "game_connected_count", 1 },
-            { "game_clear_count", 0 },
-            { "stolen_gold_count", 0 },
-            { "caught_thief_count", 0 },
-            { "spend_gold_for_fix_elevator_count", 0 },
-            { "illed_human_count", 0 },
-            { "pay_count", 0 },
-            { "convenience_store_earned_gold_count", 0 },
-            { "total_transport_human_count", 0 },
-        };
-        data_bool = new Dictionary<string, bool>()
-        {
-            { "korean_speed_whether", false },
-            { "english_whether", false },
-            { "higher_than_63_building_whether", false },
-            { "total_transport_human_count", false },
-            { "employ_cleaner_more_than_ten_whether", false },
-            { "fool_player_whether", false },
-            { "choose_no_effect_buff_whether", false },
-            { "dont_employ_guard_whether", false },
-            { "master_more_than_two_whether", false }
-        };
-    }
-    // 업적
-    // 뭘 좋아할지 몰라 다 준비해봤어
-    // 모든 업적은 게임이 완전히 끝나고(죽거나 클리어하거나) 저장됨, 중간에 저장 x
-
     public class Key
     {
         public class TypeInt
         {
+            public const int type = -1;
             public const string game_connected_count = "game_connected_count";
             public const string game_clear_count = "game_clear_count";
             public const string stolen_gold_count = "stolen_gold_count";
@@ -54,6 +24,7 @@ public class Achievement : MonoBehaviour
         }
         public class TypeBool
         {
+            public const bool type = true;
             public const string korean_speed_whether = "korean_speed_whether";
             public const string english_whether = "english_whether";
             public const string higher_than_63_building_whether = "higher_than_63_building_whether";
@@ -66,15 +37,119 @@ public class Achievement : MonoBehaviour
         }
     }
 
+    DatabaseReference achiv_reference = null;
+    Dictionary<string, string> data_int;
+    Dictionary<string, string> data_bool;
+
+    public Achievement()
+    {
+        achiv_reference = reference.Child(user_id).Child("achievement");
+
+        data_int = new Dictionary<string, string>()
+        {
+            { "game_connected_count", "1" },
+            { "game_clear_count", "0" },
+            { "stolen_gold_count", "0" },
+            { "caught_thief_count", "0" },
+            { "spend_gold_for_fix_elevator_count", "0" },
+            { "illed_human_count", "0" },
+            { "pay_count", "0" },
+            { "convenience_store_earned_gold_count", "0" },
+            { "total_transport_human_count", "0" },
+        };
+        data_bool = new Dictionary<string, string>()
+        {
+            { "korean_speed_whether", "false" },
+            { "english_whether", "false" },
+            { "higher_than_63_building_whether", "false" },
+            { "total_transport_human_count", "false" },
+            { "employ_cleaner_more_than_ten_whether", "false" },
+            { "fool_player_whether", "false" },
+            { "choose_no_effect_buff_whether", "false" },
+            { "dont_employ_guard_whether", "false" },
+            { "master_more_than_two_whether", "false" }
+        };
+    }
+    // 업적
+    // 뭘 좋아할지 몰라 다 준비해봤어
+    // 모든 업적은 게임이 완전히 끝나고(죽거나 클리어하거나) 저장됨, 중간에 저장 x
+
     public void UpdateUser(string key, int add)
     {
         if (data_int.ContainsKey(key))
-            data_int[key] += add;
+            data_int[key] = (int.Parse(data_int[key]) + add).ToString();
     }
     public void UpdateUser(string key, bool TorF)
     {
         if (data_bool.ContainsKey(key))
-            data_bool[key] = TorF;
+            data_bool[key] = TorF ? "true" : "false";
+    }
+
+    public bool Contains(string key, int type)
+    {
+        return data_int.ContainsKey(key);
+    }
+    public bool Contains(string key, bool type)
+    {
+        return data_bool.ContainsKey(key);
+    }
+
+    public int GetValue(string key, int type)
+    {
+        if (data_int.ContainsKey(key))
+            return int.Parse(data_int[key]);
+        return default;
+    }
+    public bool GetValue(string key, bool type)
+    {
+        if (data_bool.ContainsKey(key))
+            return bool.Parse(data_bool[key]);
+        return default;
+    }
+
+    protected override void Create()
+    {
+        achiv_reference.Child("int").SetValueAsync(data_int);
+        achiv_reference.Child("bool").SetValueAsync(data_bool);
+    }
+
+    protected override void Read()
+    {
+        DataSnapshot ds;
+
+        ds = data_snapshot.Child("achievement").Child("int");
+        foreach (var d in ds.Children)
+            UpdateUser(d.Key, int.Parse(d.Value.ToString()));
+
+        ds = data_snapshot.Child("achievement").Child("bool");
+        foreach (var d in ds.Children)
+            UpdateUser(d.Key, bool.Parse(d.Value.ToString()));
+    }
+
+    public void Save(string key, int type)
+    {
+        if (data_int.ContainsKey(key))
+            achiv_reference.Child("int").UpdateChildrenAsync(ToDictionary(key, data_int[key]));
+    }
+    public void Save(string key, bool type)
+    {
+        if (data_bool.ContainsKey(key))
+            achiv_reference.Child("bool").UpdateChildrenAsync(ToDictionary(key, data_bool[key]));
+    }
+
+    protected override void _SaveAll()
+    {
+        foreach (var d in data_int)
+            achiv_reference.Child("int").UpdateChildrenAsync(ToDictionary(d.Key, d.Value));
+        foreach (var d in data_bool)
+            achiv_reference.Child("bool").UpdateChildrenAsync(ToDictionary(d.Key, d.Value));
+    }
+
+    Dictionary<string, object> ToDictionary(string key, object value)
+    {
+        Dictionary<string, object> dic = new Dictionary<string, object>();
+        dic[key] = value;
+        return dic;
     }
 
     //*************************int*******************************

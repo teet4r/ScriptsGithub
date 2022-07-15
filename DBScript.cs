@@ -4,12 +4,13 @@ using UnityEngine;
 
 using Firebase;
 using Firebase.Database;
+using System;
 
 public class DBScript : MonoBehaviour
 {
     public static DBScript Instance = null;
 
-    class User
+    protected class User
     {
         public Achievement achievement;
 
@@ -20,9 +21,10 @@ public class DBScript : MonoBehaviour
     }
 
     FirebaseApp app = null;
-    DatabaseReference reference = null;
-    User user = null;
-    string user_id = null;
+    protected DatabaseReference reference { get; private set; } = null;
+    protected DataSnapshot data_snapshot { get; private set; } = null;
+    protected User user { get; private set; } = null;
+    protected string user_id { get; private set; } = null;
     bool init_done = false;
 
     void Awake()
@@ -67,76 +69,74 @@ public class DBScript : MonoBehaviour
         });
     }
 
-    void Create()
+    protected virtual void Create()
     {
         user = new User();
 
+        user.achievement.Create();
         //string json = JsonUtility.ToJson(user.achievement.data_int);
-        reference.Child(user_id).Child("achievement").Child("int").SetValueAsync(user.achievement.data_int);
         //json = JsonUtility.ToJson(user.achievement.data_bool);
-        reference.Child(user_id).Child("achievement").Child("bool").SetValueAsync(user.achievement.data_bool);
     }
 
-    void Read()
+    protected virtual void Read()
     {
-        var task = reference.Child(user_id).GetValueAsync();
-        var dataSnapshot = task.Result;
-        if (task.IsCanceled)
-            Debug.Log("Error.");
-        else if (task.IsFaulted)
-            Debug.Log("Error.");
-        else if (!dataSnapshot.Exists)
-            Create();
-        else if (dataSnapshot.Exists)
+        try
         {
-            user = new User();
+            var task = reference.Child(user_id).GetValueAsync();
+            data_snapshot = task.Result;
+            if (task.IsCanceled)
+                Debug.Log("task canceled./DBScript/Read()");
+            else if (task.IsFaulted)
+                Debug.Log("task faulted./DBScript/Read()");
+            else if (!data_snapshot.Exists)
+                Create();
+            else if (data_snapshot.Exists)
+            {
+                user = new User();
 
-            var achievement_data = dataSnapshot.Child("achievement").Child("int");
-            foreach (var d in achievement_data.Children)
-                user.achievement.UpdateUser(d.Key, (int)d.Value); // 언박싱하는 과정에서 터짐
-            achievement_data = dataSnapshot.Child("achievement").Child("bool");
-            foreach (var d in achievement_data.Children)
-                user.achievement.UpdateUser(d.Key, (bool)d.Value);
+                user.achievement.Read();
 
-            // 읽기에 성공했으므로 game_connection_cnt++;
-            const string key = Achievement.Key.TypeInt.game_connected_count;
-            user.achievement.UpdateUser(key, 1);
-            UpdateAchievement<int>(key);
+                // 읽기에 성공했으므로 game_connection_cnt++;
+                user.achievement.Save(Achievement.Key.TypeInt.game_connected_count, Achievement.Key.TypeInt.type);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
         }
     }
 
-    public void UpdateAchievement<T>(string key)
+    /// <summary>
+    /// for outter class
+    /// </summary>
+    public void SaveAll()
+    {
+        _SaveAll();
+    }
+    protected virtual void _SaveAll()
     {
         if (!init_done || user == null)
-            return;
-        if (typeof(T) == typeof(int) && user.achievement.data_int.ContainsKey(key))
         {
-            reference.Child(user_id).Child("achievement").Child("int").UpdateChildrenAsync(ToDictionary(key, user.achievement.data_int[key]));
+            Debug.Log("Save Error./DBScript/_SaveAll()");
             return;
         }
-        else if (typeof(T) == typeof(bool) && user.achievement.data_bool.ContainsKey(key))
-        {
-            reference.Child(user_id).Child("achievement").Child("bool").UpdateChildrenAsync(ToDictionary(key, user.achievement.data_bool[key]));
-            return;
-        }
+
+        user.achievement._SaveAll();
     }
 
     public void Remove()
     {
         if (!init_done || user == null)
+        {
+            Debug.Log("Remove Error./DBScript/Remove()");
             return;
+        }
+
         reference.Child(user_id).RemoveValueAsync();
     }
     public void Remove(string user_id)
     {
         reference.Child(user_id).RemoveValueAsync();
-    }
-
-    Dictionary<string, object> ToDictionary(string key, object value)
-    {
-        Dictionary<string, object> dic = new Dictionary<string, object>();
-        dic[key] = value;
-        return dic;
     }
 
     void OnApplicationQuit()
