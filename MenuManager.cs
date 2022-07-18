@@ -32,11 +32,10 @@ public class MenuManager : MonoBehaviour
     void Start()
     {
         // 로그인
-        /*
         GPGSBinder.Inst.Login((success, localUser) =>
                //log = $"{success}, {localUser.userName}, {localUser.id}, {localUser.state}, {localUser.underage}");
                // DB 활성화
-               DBScript.Instance.Init(localUser.id));*/
+               DBScript.Instance.Init(localUser.id));
 
         StartCoroutine(OpenDoors());
 
